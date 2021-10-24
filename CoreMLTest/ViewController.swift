@@ -20,9 +20,48 @@ class ViewController: UIViewController, UIImagePickerControllerDelegate, UINavig
         imagePicker.allowsEditing = false
         imagePicker.sourceType = .photoLibrary
     }
-
     @IBAction func cameraTapped(_ sender: UIBarButtonItem) {
         present(imagePicker, animated: true, completion: nil)
     }
+    //MARK:- UIImagePickerControllerDelegate Methods
+    func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey : Any]) {
+        if let pickedImage = info[UIImagePickerController.InfoKey.originalImage] as? UIImage {
+            //imageView.contentMode = .scaleAspectFill
+            imageView.image = pickedImage
+            
+            // convert to core image for using CoreML framework
+            guard let ciImage = CIImage(image: pickedImage) else {
+                fatalError("We could not convert UIimage into CIImage.")
+            }
+            detect(image: ciImage)
+        }
+        imagePicker.dismiss(animated: true, completion: nil)
+    }
+
+    func detect(image: CIImage){
+        
+        guard let model = try? VNCoreMLModel(for: Inceptionv3(configuration: .init()).model) else {
+            fatalError("Loading CoreML Model Failed.")
+        }
+        
+        let request = VNCoreMLRequest(model: model) { request, error in
+            guard let results = request.results as? [VNClassificationObservation] else {
+                fatalError("Model failed to process image")
+            }
+            if let firstResult = results.first {
+                self.navigationItem.title = firstResult.identifier + " " + String(format: "%.2f", firstResult.confidence)
+            }
+        }
+        
+        let handler = VNImageRequestHandler(ciImage: image)
+        do{
+            try handler.perform([request])
+        }
+        catch {
+            print(error)
+        }
+        
+    }
+
 }
 
