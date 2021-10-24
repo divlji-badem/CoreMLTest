@@ -18,11 +18,13 @@ class ViewController: UIViewController, UIImagePickerControllerDelegate, UINavig
         super.viewDidLoad()
         imagePicker.delegate = self
         imagePicker.allowsEditing = false
-        imagePicker.sourceType = .photoLibrary
+        imagePicker.sourceType = .camera
     }
+    
     @IBAction func cameraTapped(_ sender: UIBarButtonItem) {
         present(imagePicker, animated: true, completion: nil)
     }
+    
     //MARK:- UIImagePickerControllerDelegate Methods
     func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey : Any]) {
         if let pickedImage = info[UIImagePickerController.InfoKey.originalImage] as? UIImage {
@@ -31,7 +33,7 @@ class ViewController: UIViewController, UIImagePickerControllerDelegate, UINavig
             
             // convert to core image for using CoreML framework
             guard let ciImage = CIImage(image: pickedImage) else {
-                fatalError("We could not convert UIimage into CIImage.")
+                fatalError("Could not convert UIimage into CIImage.")
             }
             detect(image: ciImage)
         }
@@ -39,7 +41,6 @@ class ViewController: UIViewController, UIImagePickerControllerDelegate, UINavig
     }
 
     func detect(image: CIImage){
-        
         guard let model = try? VNCoreMLModel(for: Inceptionv3(configuration: .init()).model) else {
             fatalError("Loading CoreML Model Failed.")
         }
@@ -51,6 +52,7 @@ class ViewController: UIViewController, UIImagePickerControllerDelegate, UINavig
             if let firstResult = results.first {
                 self.navigationItem.title = firstResult.identifier + " " + String(format: "%.2f", firstResult.confidence)
             }
+           // print(results)
         }
         
         let handler = VNImageRequestHandler(ciImage: image)
@@ -60,8 +62,6 @@ class ViewController: UIViewController, UIImagePickerControllerDelegate, UINavig
         catch {
             print(error)
         }
-        
     }
-
 }
 
